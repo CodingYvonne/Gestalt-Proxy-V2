@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>完形生活提案 - Gestalt Life Proposal</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 設定字體 -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Noto+Serif+TC:wght@200..900&display=swap');
+        body {
+            font-family: 'Noto Serif TC', 'Inter', serif; 
+            background-color: #A47963;
+            background-image: url('https://images.unsplash.com/photo-1549495034-728b7e283287?q=80&w=1974&auto=format&fit=crop'); 
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center center;
+        }
+        .bg-primary-dark { background-color: #A47963; } 
+        .hover\:bg-primary-dark-hover:hover { background-color: #926A57; }
+        .bg-accent-medium { background-color: #A47963; } 
+        .hover\:bg-accent-medium-hover:hover { background-color: #926A57; }
+        .bg-ground-soft { background-color: #93B48B; }
+        .hover\:bg-ground-soft-hover:hover { background-color: #7a9973; }
+        .text-primary-dark { color: #A47963; } 
+        .bg-end-conversation { background-color: #5A352A; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .emoji-button { transition: transform 0.1s ease-in-out; }
+        .emoji-button:hover { transform: scale(1.2); }
+        .emoji-button.selected { background-color: #A47963; color: white !important; transform: scale(1.15); }
+        #chat-history-container { max-height: 400px; overflow-y: auto; }
+        .task-type-badge { font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app-container" class="w-full max-w-lg bg-white rounded-3xl shadow-xl overflow-hidden transform transition-all duration-300">
+        <header class="bg-primary-dark p-6">
+            <h1 class="text-3xl font-extrabold text-white text-center">完形生活提案</h1>
+            <p class="text-sm text-gray-200 text-center mt-1">Gestalt Life Proposal</p>
+        </header>
+
+        <main class="p-6 md:p-8">
+            <div id="views-container" class="space-y-6">
+                <!-- 1. Home View -->
+                <div id="view-home" class="view active">
+                    <div class="min-h-[150px] flex flex-col justify-center items-center text-center p-6 rounded-xl">
+                        <p class="text-xl text-gray-700 font-semibold mb-6">歡迎來到完形覺察的此刻。</p>
+                        <div class="space-y-4 w-full">
+                            <button onclick="switchView('random-tools')" class="w-full px-4 py-3 bg-ground-soft text-white font-bold text-lg rounded-xl shadow-lg hover:bg-ground-soft-hover transition-all transform hover:scale-[1.02] active:scale-[0.98]">我想隨機獲得行動指令</button>
+                            <button onclick="switchView('ai-interaction')" class="w-full px-4 py-3 bg-accent-medium text-white font-bold text-lg rounded-xl shadow-lg hover:bg-accent-medium-hover transition-all transform hover:scale-[1.02] active:scale-[0.98]">我想跟完形行者對話</button>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-6">請選擇你當下想做的覺察練習。</p>
+                    </div>
+                </div>
+
+                <!-- 2. Random View -->
+                <div id="view-random-tools" class="view">
+                    <div id="display-card-random" class="min-h-[150px] flex flex-col justify-center items-center text-center bg-gray-50 border border-[#93B48B] p-6 rounded-xl">
+                        <div id="message-content-random">
+                            <p class="text-lg text-gray-500">請選擇下方指令，開始覺察。</p>
+                        </div>
+                    </div>
+                    <div id="task-interaction-area" class="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200 hidden"></div>
+                    <div id="image-result-area" class="mt-6"></div>
+                    <div class="mt-6 space-y-4">
+                        <button id="quote-button" class="w-full py-3 bg-primary-dark text-white font-bold rounded-xl shadow-lg hover:bg-primary-dark-hover transition-all">✨ 完形大師的經典語錄</button>
+                        <button id="task-button" class="w-full py-3 bg-ground-soft text-white font-bold rounded-xl shadow-lg hover:bg-ground-soft-hover transition-all">🌪️ 完形的覺察行動</button>
+                    </div>
+                    <button onclick="switchView('home', 'random')" class="mt-6 w-full text-sm text-gray-500 py-2 border border-gray-300 rounded-lg hover:text-primary-dark hover:border-primary-dark transition">← 返回起始頁</button>
+                </div>
+
+                <!-- 3. AI View -->
+                <div id="view-ai-interaction" class="view">
+                    <div id="chat-history-container" class="min-h-[150px] space-y-4 p-4 bg-gray-50 border border-[#93B48B] rounded-xl transition-all">
+                        <p class="text-lg text-gray-500 text-center">完形行者正在等候您的邀請。</p>
+                    </div>
+                    <div id="palette-result-area" class="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200 hidden"></div>
+                    <div id="chat-input-area" class="mt-6 space-y-3 p-4 bg-gray-50 rounded-xl border">
+                        <label class="block text-sm font-bold text-gray-700">💬 寫下你現在的煩惱或感受：</label>
+                        <textarea id="user-concern" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-[#A47963] focus:border-[#A47963] transition text-gray-800" placeholder="例如：我對期末報告感到焦慮..."></textarea>
+                        <button id="submit-concern-button" class="w-full py-3 bg-accent-medium text-white font-bold rounded-xl shadow-lg hover:bg-accent-medium-hover transition-all disabled:opacity-50" disabled>
+                            <span id="concern-button-text">接收完形回應</span>
+                        </button>
+                    </div>
+                    <button id="end-conversation-button" class="mt-6 w-full py-3 bg-end-conversation text-white font-bold rounded-xl hidden" onclick="handleEndConversation()">結束本次對話</button>
+                    <div id="status-message" class="mt-4 text-center text-red-500 hidden"></div>
+                    <button onclick="switchView('home', 'ai')" class="mt-4 w-full text-sm text-gray-500 py-2 border border-gray-300 rounded-lg hover:text-primary-dark transition">← 返回起始頁</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // === 核心設定：指向 Vercel Proxy 獨立端點 ===
+        const CHAT_PROXY_URL = "/api/chat-proxy";
+        const IMAGE_PROXY_URL = "/api/image-proxy";
+        const SYSTEM_PROMPT = "你是一位完形治療引導者（Gestalt Facilitator）。你的任務是根據使用者描述的煩惱或當下感受，給出一個簡短、專注於此刻覺察的回應。使用繁體中文，不給建議，引導使用者將注意力帶回當下的感官、情緒或身體感受，並使用『我』語言回應。";
+
+        let chatHistory = [];
+        let currentSelectedEmoji = null;
+        let chatRound = 0;
+
+        const gestaltQuotes = [
+            { quote: "焦慮是從『現在』到『未來』之間的縫隙。", author: "Fritz Perls" },
+            { quote: "失去理智，找回感官。", author: "Fritz Perls" },
+            { quote: "覺察即療癒。", author: "Fritz Perls" },
+            { quote: "很好喔！", author: "謝曜任" },
+            { quote: "是什麼阻擋了你？", author: "謝曜任" },
+            { quote: "活在當下。", author: "Fritz Perls" }
+        ];
+
+        const awarenessTasks = [
+            { type: '感官覺察', color: 'bg-[#f0f5ee] text-[#A47963]', tasks: ["閉上眼，找出空氣中三種不同的味道。", "專注聆聽周遭最微弱的聲音，持續 30 秒。", "觸摸你的指尖，感受溫度與紋理。"] },
+            { type: '身體覺察', color: 'bg-[#d0e6ec] text-[#A47963]', tasks: ["深吸一口氣，感受氣體是停在胸口還是進到肚子？", "緩慢聳起肩膀，然後讓它們完全放鬆，重複三次。"] },
+            { type: '語意轉化', color: 'bg-[#e6e0f3] text-[#A47963]', tasks: ["把『我不能...』改成『我不願意...』，再說一次感受看看。", "說出『我選擇...』來描述你今天的某個行動。"] }
+        ];
+
+        const EMOJIS = [
+            { icon: '😌', label: '放鬆' }, { icon: '🤔', label: '好奇' }, { icon: '😫', label: '壓力' }, 
+            { icon: '😄', label: '喜悅' }, { icon: '😠', label: '憤怒' }, { icon: '😮', label: '驚訝' }, { icon: '😔', label: '難過' }
+        ];
+
+        // === 修正後的統一請求函式 (根據 type 選取正確端點) ===
+        async function callProxyAPI(type, payload) {
+            const url = (type === 'text') ? CHAT_PROXY_URL : IMAGE_PROXY_URL;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload) // 這裡直接傳送原本 Google API 格式的 payload
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'API 請求失敗');
+            }
+            return await response.json();
+        }
+
+        // === 視圖切換邏輯 ===
+        function switchView(target, source = null) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(`view-${target}`).classList.add('active');
+            
+            if (target === 'home') {
+                chatHistory = [];
+                chatRound = 0;
+                document.getElementById('palette-result-area').classList.add('hidden');
+                document.getElementById('chat-input-area').classList.remove('hidden');
+                document.getElementById('chat-history-container').innerHTML = '<p class="text-lg text-gray-500 text-center">完形行者正在等候您的邀請。</p>';
+                document.getElementById('chat-history-container').style.opacity = '1';
+                document.getElementById('end-conversation-button').classList.add('hidden');
+                if (source === 'random') {
+                    document.getElementById('task-interaction-area').classList.add('hidden');
+                    document.getElementById('image-result-area').innerHTML = '';
+                }
+            }
+        }
+
+        // === AI 對話處理 ===
+        async function handleConcernSubmission() {
+            const input = document.getElementById('user-concern');
+            const btn = document.getElementById('submit-concern-button');
+            const status = document.getElementById('status-message');
+            const text = input.value.trim();
+            if (!text) return;
+
+            btn.disabled = true;
+            status.classList.add('hidden');
+            chatHistory.push({ role: 'user', parts: [{ text }] });
+            renderChat();
+            input.value = '';
+
+            try {
+                const result = await callProxyAPI('text', {
+                    contents: chatHistory,
+                    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
+                });
+                const response = result.candidates[0].content.parts[0].text;
+                chatHistory.push({ role: 'model', parts: [{ text: response }] });
+                renderChat();
+                document.getElementById('end-conversation-button').classList.remove('hidden');
+                chatRound++;
+            } catch (e) {
+                status.textContent = "完形回應失敗: " + e.message;
+                status.classList.remove('hidden');
+                chatHistory.pop(); // 失敗則移除最後一條訊息
+                renderChat();
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // === 圖片生成處理 ===
+        async function handleTaskSubmission() {
+            const obs = document.getElementById('task-observation').value.trim();
+            const resArea = document.getElementById('image-result-area');
+            const btn = document.getElementById('generate-image-button');
+            if (obs.length < 5) return alert("請至少輸入 5 個字來描述你的覺察！");
+
+            btn.disabled = true;
+            resArea.innerHTML = `<div class="text-center text-gray-500 py-4 animate-pulse">正在捕捉內在風景...</div>`;
+            
+            try {
+                const emotion = EMOJIS.find(e => e.icon === currentSelectedEmoji)?.label || "平靜";
+                const prompt = `Photorealistic nature photography, inner state of "${emotion}", based on: "${obs}". Cinematic, high detail, artistic.`;
+                const result = await callProxyAPI('image', {
+                    instances: { prompt },
+                    parameters: { sampleCount: 1 }
+                });
+                const b64 = result.predictions[0].bytesBase64Encoded;
+                resArea.innerHTML = `
+                    <div class="mt-4 p-4 bg-white rounded-xl shadow-lg border border-gray-200">
+                        <h4 class="text-lg font-bold text-[#A47963] mb-2 text-center">🖼️ 你的專屬覺察風景</h4>
+                        <img src="data:image/png;base64,${b64}" class="w-full h-auto rounded-lg shadow-md">
+                        <p class="text-xs text-gray-400 mt-2 text-center">這是根據你的覺察，為你生成的此刻風景。</p>
+                    </div>`;
+            } catch (e) {
+                resArea.innerHTML = `<p class="text-red-500 text-center">圖片生成失敗: ${e.message}</p>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // === 結束對話生成色票 ===
+        async function handleEndConversation() {
+            const area = document.getElementById('palette-result-area');
+            const inputArea = document.getElementById('chat-input-area');
+            const btn = document.getElementById('end-conversation-button');
+
+            inputArea.classList.add('hidden');
+            btn.classList.add('hidden');
+            area.classList.remove('hidden');
+            area.innerHTML = `<div class="text-center py-4">完形行者正在準備你的顏色禮物...</div>`;
+
+            try {
+                const summary = chatHistory.map(m => `${m.role}: ${m.parts[0].text}`).join('\n');
+                const prompt = `Analyze this Gestalt dialogue and return exactly 3 representative HEX colors in JSON. Dialogue: ${summary}`;
+                
+                const result = await callProxyAPI('text', {
+                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                summaryEmotion: { type: "STRING" },
+                                palette: { type: "ARRAY", items: { type: "STRING" } }
+                            }
+                        }
+                    }
+                });
+
+                const data = JSON.parse(result.candidates[0].content.parts[0].text);
+                const colorBlocks = data.palette.map(c => `
+                    <div style="background-color: ${c}; height: 80px;" class="w-full rounded-lg shadow flex items-end justify-center p-1 text-[10px] text-white">
+                        <span class="bg-black/40 px-1 rounded">${c}</span>
+                    </div>`).join('');
+
+                area.innerHTML = `
+                    <h3 class="text-xl font-bold text-center mb-3">🎁 完形行者的專屬禮物</h3>
+                    <p class="text-center text-sm mb-4">感覺到了這段對話中的<span class="font-bold">『${data.summaryEmotion}』</span></p>
+                    <div class="grid grid-cols-3 gap-2">${colorBlocks}</div>
+                    <p class="text-xs text-gray-400 mt-4 text-center">帶著這份覺察的顏色繼續生活吧。</p>`;
+                document.getElementById('chat-history-container').style.opacity = '0.4';
+            } catch (e) {
+                area.innerHTML = `<p class="text-center text-gray-500">禮物生成時出了點小插曲，但覺察已在心中。</p>`;
+            }
+        }
+
+        // === 渲染聊天歷史 ===
+        function renderChat() {
+            const container = document.getElementById('chat-history-container');
+            container.innerHTML = chatHistory.map(m => `
+                <div class="flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}">
+                    <div class="max-w-[85%] p-3 rounded-xl shadow-sm ${m.role === 'user' ? 'bg-[#93B48B] text-white' : 'bg-white border'}">
+                        <p class="text-[10px] font-bold mb-1 opacity-70">${m.role === 'user' ? 'YOU' : 'GESTALT WALKER'}</p>
+                        <p class="text-sm">${m.parts[0].text.replace(/\n/g, '<br>')}</p>
+                    </div>
+                </div>`).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // === 點選表情 ===
+        window.selectEmoji = function(el) {
+            document.querySelectorAll('.emoji-button').forEach(b => b.classList.remove('selected', 'bg-[#A47963]', 'text-white'));
+            el.classList.add('selected', 'bg-[#A47963]', 'text-white');
+            currentSelectedEmoji = el.dataset.emoji;
+        }
+
+        // === 初始化事件 ===
+        window.onload = () => {
+            // 名言按鈕
+            document.getElementById('quote-button').onclick = () => {
+                const q = gestaltQuotes[Math.floor(Math.random() * gestaltQuotes.length)];
+                document.getElementById('message-content-random').innerHTML = `
+                    <p class="task-type-badge bg-[#d0e6ec] text-[#A47963] mb-4 inline-block">大師語錄</p>
+                    <p class="text-xl font-semibold text-gray-800 leading-relaxed">${q.quote}</p>
+                    <p class="text-sm text-gray-500 mt-2">-- ${q.author}</p>`;
+                document.getElementById('task-interaction-area').classList.add('hidden');
+                document.getElementById('image-result-area').innerHTML = '';
+            };
+
+            // 任務按鈕
+            document.getElementById('task-button').onclick = () => {
+                const group = awarenessTasks[Math.floor(Math.random() * awarenessTasks.length)];
+                const task = group.tasks[Math.floor(Math.random() * group.tasks.length)];
+                document.getElementById('message-content-random').innerHTML = `
+                    <p class="task-type-badge ${group.color} mb-4 inline-block">${group.type}</p>
+                    <p class="text-xl font-bold text-gray-800 leading-relaxed">${task}</p>`;
+                
+                const interaction = document.getElementById('task-interaction-area');
+                interaction.classList.remove('hidden');
+                interaction.innerHTML = `
+                    <div class="space-y-4">
+                        <label class="block text-sm font-bold text-gray-700">💡 你的此刻覺察：</label>
+                        <textarea id="task-observation" rows="2" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-[#A47963]" placeholder="在此寫下你的體會..."></textarea>
+                        <div class="flex flex-wrap gap-2 justify-center">
+                            ${EMOJIS.map(e => `<button onclick="selectEmoji(this)" data-emoji="${e.icon}" class="emoji-button text-2xl p-2 rounded-full border border-gray-100 bg-white hover:bg-gray-50">${e.icon}</button>`).join('')}
+                        </div>
+                        <button id="generate-image-button" onclick="handleTaskSubmission()" class="w-full py-3 bg-accent-medium text-white font-bold rounded-xl shadow-md hover:bg-accent-medium-hover transition-all">獲得專屬照片</button>
+                    </div>`;
+                document.getElementById('image-result-area').innerHTML = '';
+            };
+
+            // AI 對話輸入監聽
+            document.getElementById('user-concern').oninput = (e) => {
+                document.getElementById('submit-concern-button').disabled = !e.target.value.trim();
+            };
+            document.getElementById('submit-concern-button').onclick = handleConcernSubmission;
+        };
+    </script>
+</body>
+</html>
